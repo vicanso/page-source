@@ -3,21 +3,28 @@
 <head>
   <meta charset="utf-8">
   
-  <title>Source Line</title>
+  <title>打造更高效node.js的session处理 | Source Line</title>
 
   
   <meta name="author" content="Tree Xie">
   
 
   
+  <meta name="description" content="对于node.js的WEB开发，大部分的开发者都会熟悉或者了解express，因为它的中间件形式简单易懂，但也因为这个原因，很多人一直使用了不恰当的形式来使用中间件，首先我们来看看最express的session主要处理流程：
 
+注：shouldSave的判断包括isModified与isSaved">
+  
+
+  
+  
+  <meta name="keywords" content="">
   
 
   <meta id="viewport" name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, minimal-ui">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
 
-  
+  <meta property="og:title" content="打造更高效node.js的session处理"/>
 
   <meta property="og:site_name" content="Source Line"/>
 
@@ -54,12 +61,11 @@
 </header>
 
     <main class="site-main posts-loop">
-    
-  <article>
+    <article>
 
   
     
-    <h3 class="article-title"><a href="/2016/10/05/nodejs-session/"><span>打造更高效node.js的session处理</span></a></h3>
+    <h3 class="article-title"><span>打造更高效node.js的session处理</span></h3>
     
   
 
@@ -134,131 +140,10 @@
   </div>
 </article>
 
-
-
-  <article>
-
-  
-    
-    <h3 class="article-title"><a href="/2016/09/24/promise-memorize/"><span>使用promise-memorize提升系统性能</span></a></h3>
-    
   
 
-  <div class="article-top-meta">
-    <span class="posted-on">
-      <a href="/2016/09/24/promise-memorize/" rel="bookmark">
-        <time class="entry-date published" datetime="2016-09-24T00:45:06.000Z">
-          2016-09-24
-        </time>
-      </a>
-    </span>
-  </div>
 
 
-  
-
-  <div class="article-content">
-    <div class="entry">
-      
-        <p>从我开始接触node.js开发之后，一直都习惯使用varnish来做缓存处理，它的强大让我少考虑了很多问题，几个月前有朋友找我，说他们的系统访问量在增长，数据库的访问太频繁，有没简单的方法做优化。由于他们不希望再增加其它的缓存数据库(redis)之类，因此我介绍使用<code>async/memoize</code>来做函数级的缓存，将访问数据库的函数分类，将可缓存的缓存处理。</p>
-<p>言归正传，对于<code>async/memoize</code>个人认为有以下不方便之处：</p>
-<ul>
-<li><p>无法设置缓存时间</p>
-</li>
-<li><p>无法清除缓存</p>
-</li>
-<li><p>无相应的事件触发机制</p>
-</li>
-</ul>
-<p>因此我基于promise的形式编写了<a href="https://github.com/vicanso/promise-memorize" target="_blank" rel="external"><code>promise-memorize</code></a>，包括以下特性：</p>
-<ul>
-<li><p>能设置缓存的<code>ttl</code>，如果设置为<code>0</code>表示只用于同时并发的函数调用</p>
-</li>
-<li><p>能通过<code>hash key</code>获取缓存和删除缓存</p>
-</li>
-<li><p>事件触发，包括：<code>add</code>, <code>hit</code>, <code>resolve</code>, <code>reject</code>, <code>delete</code>, <code>expire</code></p>
-</li>
-<li><p>对于promise的返回，无论是resolve、reject都做缓存</p>
-</li>
-</ul>
-<p><img src="/pics/promise-memorize.png" alt="img"></p>
-<h3 id="Get-Stock-From-Yahoo"><a href="#Get-Stock-From-Yahoo" class="headerlink" title="Get Stock From Yahoo"></a>Get Stock From Yahoo</h3><p>从yahoo api中获取股票信息(用于对实时性不高的展示用)，对同样的参数请求做10秒的缓存处理，若接口返回出错，则立即清除缓存。每隔60秒定时清除过期缓存。</p>
-<figure class="highlight js"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div></pre></td><td class="code"><pre><div class="line"><span class="meta">'use strict'</span>;</div><div class="line"><span class="keyword">const</span> request = <span class="built_in">require</span>(<span class="string">'superagent'</span>);</div><div class="line"><span class="keyword">const</span> memorize = <span class="built_in">require</span>(<span class="string">'promise-memorize'</span>);</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">function</span> <span class="title">getStock</span>(<span class="params">code, start, end, period</span>) </span>&#123;</div><div class="line">  <span class="keyword">const</span> startArr = start.split(<span class="string">'-'</span>);</div><div class="line">  <span class="keyword">const</span> endArr = end.split(<span class="string">'-'</span>);</div><div class="line">  <span class="keyword">const</span> url = <span class="string">`http://ichart.yahoo.com/table.csv?s=<span class="subst">$&#123;code&#125;</span>&amp;a=<span class="subst">$&#123;startArr[1]&#125;</span>&amp;b=<span class="subst">$&#123;startArr[2]&#125;</span>&amp;c=<span class="subst">$&#123;startArr[0]&#125;</span>&amp;d=<span class="subst">$&#123;endArr[1]&#125;</span>&amp;e=<span class="subst">$&#123;endArr[2]&#125;</span>&amp;f=<span class="subst">$&#123;endArr[0]&#125;</span>&amp;g=<span class="subst">$&#123;period&#125;</span>`</span>;</div><div class="line">  </div><div class="line">  <span class="keyword">return</span> <span class="keyword">new</span> <span class="built_in">Promise</span>((resolve, reject) =&gt; &#123;</div><div class="line">    <span class="built_in">console</span>.info(<span class="string">'GET yahoo:%s'</span>, url);</div><div class="line">    request.get(url).end((err, res) =&gt; &#123;</div><div class="line">      <span class="keyword">if</span> (err) &#123;</div><div class="line">        reject(err);</div><div class="line">      &#125; <span class="keyword">else</span> &#123;</div><div class="line">        resolve(res.text);</div><div class="line">      &#125;</div><div class="line">    &#125;);</div><div class="line">  &#125;);</div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="keyword">const</span> memorizeGetStock = memorize(getStock, (code, start, end, period) =&gt; &#123;</div><div class="line">  <span class="comment">// hash key function</span></div><div class="line">  <span class="keyword">return</span> <span class="string">`<span class="subst">$&#123;code&#125;</span>-<span class="subst">$&#123;start&#125;</span>-<span class="subst">$&#123;end&#125;</span>-<span class="subst">$&#123;period&#125;</span>`</span>;</div><div class="line">&#125;, <span class="number">10</span> * <span class="number">1000</span>);</div><div class="line"><span class="comment">// 设置60秒定时清除过期缓存</span></div><div class="line">memorizeGetStock.periodicClear(<span class="number">60</span> * <span class="number">1000</span>);</div><div class="line">memorizeGetStock.on(<span class="string">'add'</span>, key =&gt; &#123;</div><div class="line">  <span class="built_in">console</span>.info(<span class="string">`<span class="subst">$&#123;key&#125;</span> add to cache`</span>);</div><div class="line">&#125;);</div><div class="line">memorizeGetStock.on(<span class="string">'delete'</span>, key =&gt; &#123;</div><div class="line">  <span class="built_in">console</span>.info(<span class="string">`<span class="subst">$&#123;key&#125;</span> delete from cache`</span>);</div><div class="line">&#125;);</div><div class="line">memorizeGetStock.on(<span class="string">'resolve'</span>, key =&gt; &#123;</div><div class="line">  <span class="built_in">console</span>.info(<span class="string">`<span class="subst">$&#123;key&#125;</span> resolve`</span>);</div><div class="line">&#125;);</div><div class="line">memorizeGetStock.on(<span class="string">'reject'</span>, key =&gt; &#123;</div><div class="line">  <span class="built_in">console</span>.info(<span class="string">`<span class="subst">$&#123;key&#125;</span> reject`</span>);</div><div class="line">  <span class="comment">// when reject emit, remove the cache(key)</span></div><div class="line">  memorizeGetStock.delete(key);</div><div class="line">&#125;);</div><div class="line"></div><div class="line">memorizeGetStock(<span class="string">'600000.SS'</span>, <span class="string">'2016-01-01'</span>, <span class="string">'2016-03-31'</span>, <span class="string">'d'</span>).then((csv) =&gt; &#123;</div><div class="line">  <span class="built_in">console</span>.info(<span class="string">'day data size:%d'</span>, csv.length);</div><div class="line">&#125;).catch(<span class="built_in">console</span>.error);</div></pre></td></tr></table></figure>
-<p>通过使用上面的方式，将获取股票信息的调用频率从原来的每分钟10K的级别降低到0.1K，大大的提升了系统性能。</p>
-<p><a href="https://www.npmjs.org/package/promise-memorize" target="_blank" rel="external"><img src="http://img.shields.io/npm/v/promise-memorize.svg?style=flat-square" alt="npm"></a></p>
-
-      
-    </div>
-
-  </div>
-
-  <div class="article-footer">
-    <div class="article-meta pull-left">
-
-    
-
-    
-
-    </div>
-
-    
-  </div>
-</article>
-
-
-
-  <article>
-
-  
-    
-    <h3 class="article-title"><a href="/2016/09/11/hello-world/"><span>Hello World, My Source Code.</span></a></h3>
-    
-  
-
-  <div class="article-top-meta">
-    <span class="posted-on">
-      <a href="/2016/09/11/hello-world/" rel="bookmark">
-        <time class="entry-date published" datetime="2016-09-11T03:32:29.000Z">
-          2016-09-11
-        </time>
-      </a>
-    </span>
-  </div>
-
-
-  
-
-  <div class="article-content">
-    <div class="entry">
-      
-        <p>一直以来，从来没有想过应该写怎样的代码，也不明白自己为什么要在工作之余写代码，没感觉到自己是真的沉迷在代码里面，很多时候只是觉得自己的世界里已经充满了代码的味道，说不上沉迷但已是习惯。</p>
-<p>别人喜欢<a href="http://baike.baidu.com/link?url=BvDSbDl8MLfYpb7NAuw_xvrM4y1KhmUjY6xrpz0NCFodunZyVwoCUtbReEMlxN9DM-Otsjw4_k3Dr9TW8oD5ZUES4B_sfJXeJbknQDSxqg7" target="_blank" rel="external">星际迷航</a>，我却独自的沉迷在我的<a href="http://baike.baidu.com/item/%E6%98%9F%E9%99%85%E7%A9%BF%E8%B6%8A/7588527" target="_blank" rel="external">星际穿越</a>。</p>
-
-      
-    </div>
-
-  </div>
-
-  <div class="article-footer">
-    <div class="article-meta pull-left">
-
-    
-
-    
-
-    </div>
-
-    
-  </div>
-</article>
-
-
-
-
-<nav class="pagination">
-  
-  
-</nav>
     </main>
 
     <footer class="site-footer">
