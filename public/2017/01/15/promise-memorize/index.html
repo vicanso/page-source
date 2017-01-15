@@ -1,0 +1,151 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>使用promise-memorize提升系统性能 | Source Line</title>
+
+  
+  <meta name="author" content="Tree Xie">
+  
+
+  
+  <meta name="description" content="从我开始接触node.js开发之后，一直都习惯使用varnish来做缓存处理，它的强大让我少考虑了很多问题，几个月前有朋友找我，说他们的系统访问量在增长，数据库的访问太频繁，有没简单的方法做优化。由于他们不希望再增加其它的缓存数据库(redis)之类，因此我介绍使用async/memoize来做函数">
+  
+
+  
+  
+  <meta name="keywords" content="">
+  
+
+  <meta id="viewport" name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, minimal-ui">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+
+  <meta property="og:title" content="使用promise-memorize提升系统性能"/>
+
+  <meta property="og:site_name" content="Source Line"/>
+
+  
+  <meta property="og:image" content="/blog/favicon.ico"/>
+  
+
+  <link href="/blog/favicon.ico" rel="icon">
+  <link rel="alternate" href="/blog/atom.xml" title="Source Line" type="application/atom+xml">
+  <link rel="stylesheet" href="/blog/css/style.css" media="screen" type="text/css">
+</head>
+
+
+<body>
+<div class="blog">
+  <div class="content">
+
+    <header>
+  <div class="site-branding">
+    <h1 class="site-title">
+      <a href="/blog/">Source Line</a>
+    </h1>
+    <p class="site-description"></p>
+  </div>
+  <nav class="site-navigation">
+    <ul>
+      
+        <li><a href="/">Home</a></li>
+      
+        <li><a href="/archives">Archives</a></li>
+      
+    </ul>
+  </nav>
+</header>
+
+    <main class="site-main posts-loop">
+    <article>
+
+  
+    
+    <h3 class="article-title"><span>使用promise-memorize提升系统性能</span></h3>
+    
+  
+
+  <div class="article-top-meta">
+    <span class="posted-on">
+      <a href="/blog/2017/01/15/promise-memorize/" rel="bookmark">
+        <time class="entry-date published" datetime="2017-01-15T09:19:27.000Z">
+          2017-01-15
+        </time>
+      </a>
+    </span>
+  </div>
+
+
+  
+
+  <div class="article-content">
+    <div class="entry">
+      
+        <p>从我开始接触node.js开发之后，一直都习惯使用varnish来做缓存处理，它的强大让我少考虑了很多问题，几个月前有朋友找我，说他们的系统访问量在增长，数据库的访问太频繁，有没简单的方法做优化。由于他们不希望再增加其它的缓存数据库(redis)之类，因此我介绍使用<code>async/memoize</code>来做函数级的缓存，将访问数据库的函数分类，将可缓存的缓存处理。</p>
+<p>言归正传，对于<code>async/memoize</code>个人认为有以下不方便之处：</p>
+<ul>
+<li><p>无法设置缓存时间</p>
+</li>
+<li><p>无法清除缓存</p>
+</li>
+<li><p>无相应的事件触发机制</p>
+</li>
+</ul>
+<p>因此我基于promise的形式编写了<a href="https://github.com/vicanso/promise-memorize" target="_blank" rel="external"><code>promise-memorize</code></a>，包括以下特性：</p>
+<ul>
+<li><p>能设置缓存的<code>ttl</code>，如果设置为<code>0</code>表示只用于同时并发的函数调用</p>
+</li>
+<li><p>能通过<code>hash key</code>获取缓存和删除缓存</p>
+</li>
+<li><p>事件触发，包括：<code>add</code>, <code>hit</code>, <code>resolve</code>, <code>reject</code>, <code>delete</code>, <code>expire</code></p>
+</li>
+<li><p>对于promise的返回，无论是resolve、reject都做缓存</p>
+</li>
+</ul>
+<p><img src="/pics/promise-memorize.png" alt="img"></p>
+<h3 id="Get-Stock-From-Yahoo"><a href="#Get-Stock-From-Yahoo" class="headerlink" title="Get Stock From Yahoo"></a>Get Stock From Yahoo</h3><p>从yahoo api中获取股票信息(用于对实时性不高的展示用)，对同样的参数请求做10秒的缓存处理，若接口返回出错，则立即清除缓存。每隔60秒定时清除过期缓存。</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div></pre></td><td class="code"><pre><div class="line"><span class="meta">'use strict'</span>;</div><div class="line"><span class="keyword">const</span> request = <span class="built_in">require</span>(<span class="string">'superagent'</span>);</div><div class="line"><span class="keyword">const</span> memorize = <span class="built_in">require</span>(<span class="string">'promise-memorize'</span>);</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">function</span> <span class="title">getStock</span>(<span class="params">code, start, end, period</span>) </span>&#123;</div><div class="line">  <span class="keyword">const</span> startArr = start.split(<span class="string">'-'</span>);</div><div class="line">  <span class="keyword">const</span> endArr = end.split(<span class="string">'-'</span>);</div><div class="line">  <span class="keyword">const</span> url = <span class="string">`http://ichart.yahoo.com/table.csv?s=<span class="subst">$&#123;code&#125;</span>&amp;a=<span class="subst">$&#123;startArr[<span class="number">1</span>]&#125;</span>&amp;b=<span class="subst">$&#123;startArr[<span class="number">2</span>]&#125;</span>&amp;c=<span class="subst">$&#123;startArr[<span class="number">0</span>]&#125;</span>&amp;d=<span class="subst">$&#123;endArr[<span class="number">1</span>]&#125;</span>&amp;e=<span class="subst">$&#123;endArr[<span class="number">2</span>]&#125;</span>&amp;f=<span class="subst">$&#123;endArr[<span class="number">0</span>]&#125;</span>&amp;g=<span class="subst">$&#123;period&#125;</span>`</span>;</div><div class="line">  </div><div class="line">  <span class="keyword">return</span> <span class="keyword">new</span> <span class="built_in">Promise</span>(<span class="function">(<span class="params">resolve, reject</span>) =&gt;</span> &#123;</div><div class="line">    <span class="built_in">console</span>.info(<span class="string">'GET yahoo:%s'</span>, url);</div><div class="line">    request.get(url).end(<span class="function">(<span class="params">err, res</span>) =&gt;</span> &#123;</div><div class="line">      <span class="keyword">if</span> (err) &#123;</div><div class="line">        reject(err);</div><div class="line">      &#125; <span class="keyword">else</span> &#123;</div><div class="line">        resolve(res.text);</div><div class="line">      &#125;</div><div class="line">    &#125;);</div><div class="line">  &#125;);</div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="keyword">const</span> memorizeGetStock = memorize(getStock, (code, start, end, period) =&gt; &#123;</div><div class="line">  <span class="comment">// hash key function</span></div><div class="line">  <span class="keyword">return</span> <span class="string">`<span class="subst">$&#123;code&#125;</span>-<span class="subst">$&#123;start&#125;</span>-<span class="subst">$&#123;end&#125;</span>-<span class="subst">$&#123;period&#125;</span>`</span>;</div><div class="line">&#125;, <span class="number">10</span> * <span class="number">1000</span>);</div><div class="line"><span class="comment">// 设置60秒定时清除过期缓存</span></div><div class="line">memorizeGetStock.periodicClear(<span class="number">60</span> * <span class="number">1000</span>);</div><div class="line">memorizeGetStock.on(<span class="string">'add'</span>, key =&gt; &#123;</div><div class="line">  <span class="built_in">console</span>.info(<span class="string">`<span class="subst">$&#123;key&#125;</span> add to cache`</span>);</div><div class="line">&#125;);</div><div class="line">memorizeGetStock.on(<span class="string">'delete'</span>, key =&gt; &#123;</div><div class="line">  <span class="built_in">console</span>.info(<span class="string">`<span class="subst">$&#123;key&#125;</span> delete from cache`</span>);</div><div class="line">&#125;);</div><div class="line">memorizeGetStock.on(<span class="string">'resolve'</span>, key =&gt; &#123;</div><div class="line">  <span class="built_in">console</span>.info(<span class="string">`<span class="subst">$&#123;key&#125;</span> resolve`</span>);</div><div class="line">&#125;);</div><div class="line">memorizeGetStock.on(<span class="string">'reject'</span>, key =&gt; &#123;</div><div class="line">  <span class="built_in">console</span>.info(<span class="string">`<span class="subst">$&#123;key&#125;</span> reject`</span>);</div><div class="line">  <span class="comment">// when reject emit, remove the cache(key)</span></div><div class="line">  memorizeGetStock.delete(key);</div><div class="line">&#125;);</div><div class="line"></div><div class="line">memorizeGetStock(<span class="string">'600000.SS'</span>, <span class="string">'2016-01-01'</span>, <span class="string">'2016-03-31'</span>, <span class="string">'d'</span>).then(<span class="function">(<span class="params">csv</span>) =&gt;</span> &#123;</div><div class="line">  <span class="built_in">console</span>.info(<span class="string">'day data size:%d'</span>, csv.length);</div><div class="line">&#125;).catch(<span class="built_in">console</span>.error);</div></pre></td></tr></table></figure>
+<p>通过使用上面的方式，将获取股票信息的调用频率从原来的每分钟10K的级别降低到0.1K，大大的提升了系统性能。</p>
+<p><a href="https://www.npmjs.org/package/promise-memorize" target="_blank" rel="external"><img src="http://img.shields.io/npm/v/promise-memorize.svg?style=flat-square" alt="npm"></a></p>
+
+      
+    </div>
+
+  </div>
+
+  <div class="article-footer">
+    <div class="article-meta pull-left">
+
+    
+
+    
+
+    </div>
+
+    
+  </div>
+</article>
+
+  
+
+
+
+    </main>
+
+    <footer class="site-footer">
+  <p class="site-info">
+    Proudly powered by <a href="https://hexo.io/" target="_blank">Hexo</a> and
+    Theme by <a href="https://github.com/CodeDaraW/Hacker" target="_blank">Hacker</a>
+    </br>
+    
+    &copy; 2017 Tree Xie
+    
+  </p>
+</footer>
+    
+  </div>
+</div>
+</body>
+</html>

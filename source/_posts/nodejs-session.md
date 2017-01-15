@@ -1,7 +1,7 @@
 ---
 title: 打造更高效node.js的session处理
 ---
-对于node.js的WEB开发，大部分的开发者都会熟悉或者了解[`express`](http://expressjs.com/)，因为它的中间件形式简单易懂，但也因为这个原因，很多人一直使用了不恰当的形式来使用中间件，首先我们来看看最express的session主要处理流程：
+对于node.js的WEB开发，大部分的开发者都会熟悉或者了解[`express`](http://expressjs.com/)，因为它的中间件形式简单易懂，但也因为这个原因，很多人一直使用了不恰当的形式来使用中间件，首先我们来看看express的session主要处理流程：
 
 ![img](/pics/express-session.png)
 
